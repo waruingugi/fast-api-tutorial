@@ -1,7 +1,7 @@
 # Dependancies
-from fastapi import Depends, FastAPI, Body
+from fastapi import Depends, FastAPI, Body, HTTPException, Header
 
-app = FastAPI()
+# app = FastAPI()
 
 
 # async def common_parameters(
@@ -51,19 +51,47 @@ app = FastAPI()
 
 #     return response
 
+# Sub Dependecies
 
-def query_extractor(q: str | None = None):
-    return q
+# def query_extractor(q: str | None = None):
+#     return q
 
 
-def query_or_body_extractor(
-    q: str = Depends(query_extractor),
-    last_query: str | None = Body(None)
-):
-    if q:
-        return q
-    return last_query
+# def query_or_body_extractor(
+#     q: str = Depends(query_extractor),
+#     last_query: str | None = Body(None)
+# ):
+#     if q:
+#         return q
+#     return last_query
 
-@app.post("/items/")
-async def try_query(query_or_body: str = Depends(query_or_body_extractor)):
-    return {"q_or_body": query_or_body}
+# @app.post("/items/")
+# async def try_query(query_or_body: str = Depends(query_or_body_extractor)):
+#     return {"q_or_body": query_or_body}
+
+
+async def verify_token(x_token: str = Header(...)):
+    if x_token != 'fake-super-secret-token':
+        raise HTTPException(status_code=400, detail="X-Token header invalid")
+
+
+async def verify_key(x_key: str = Header(...)):
+    if x_key != "fake-super-secret-key":
+        raise HTTPException(
+            status_code=400, detail="X-key header invalid"
+        )
+    return x_key
+
+# @app.get("/items", dependencies=[Depends(verify_token), Depends(verify_key)])
+# async def read_items():
+#     return [{"item": "Foo", "item": "bar"}]
+
+
+# Global dependencies
+app = FastAPI(dependencies=[Depends(verify_token), Depends(verify_key)])
+
+
+@app.get("/items")
+async def read_items():
+    return [{"item": "Foo", "item": "bar"}]
+
